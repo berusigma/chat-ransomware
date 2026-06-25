@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Admin - Dashboard Horor</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Creepster&family=Special+Elite&display=swap');
+        * { box-sizing: border-box; }
+        html, body { font-family: 'Special Elite', monospace; margin: 0; padding: 0; height: 100dvh; background: #000; color: #ddd; overflow: hidden; touch-action: pan-y; }
+        #bg-video { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; object-fit: cover; z-index: -2; filter: brightness(0.2) contrast(1.5); }
+        .scanlines { position: fixed; top: 0; left: 0; width: 100vw; height: 100dvh; z-index: -1; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.25) 50%), linear-gradient(90deg, rgba(255,0,0,0.06), rgba(0,255,0,0.02), rgba(0,0,255,0.06)); background-size: 100% 4px, 3px 100%; pointer-events: none; }
+        
+        /* Login Screen */
+        #login-screen { display: flex; justify-content: center; align-items: center; height: 100dvh; z-index: 20; position: absolute; width: 100%; }
+        .login-box { background: rgba(10, 0, 0, 0.85); padding: 40px 20px; border: 2px solid #5a0000; box-shadow: 0 0 40px rgba(255, 0, 0, 0.3); text-align: center; border-radius: 10px; width: 90%; max-width: 400px; }
+        .login-box h2 { font-family: 'Creepster', cursive; font-size: 2.5rem; margin-top: 0; text-shadow: 0 0 15px #ff0000; margin-bottom: 30px; color:#ff1a1a; letter-spacing: 2px; }
+        .login-box input { width: 100%; padding: 15px; margin: 10px 0; background: rgba(0,0,0,0.8); border: 1px solid #770000; color: #fff; font-family: inherit; font-size: 1.1rem; outline: none; text-align: center; box-sizing: border-box; }
+        .login-box button { width: 100%; padding: 15px; background: #5a0000; color: white; border: 1px solid #ff1a1a; cursor: pointer; font-family: inherit; font-size: 1.2rem; transition: 0.3s; margin-top: 15px; }
+        .login-box button:hover { background: #ff1a1a; color: black; box-shadow: 0 0 20px #ff1a1a; }
+        
+        /* Dashboard UI */
+        #dashboard { display: none; height: 100%; width: 100%; }
+        #sidebar { width: 100%; height: 100%; background: rgba(5, 0, 0, 0.85); backdrop-filter: blur(10px); display: flex; flex-direction: column; z-index: 5; }
+        #sidebar h3 { padding: 25px; margin: 0; border-bottom: 2px solid #5a0000; color: #ff1a1a; font-family: 'Creepster', cursive; font-size: 2rem; text-shadow: 0 0 15px #ff0000; text-align: center; letter-spacing: 2px; }
+        #user-list { flex-grow: 1; overflow-y: auto; padding-top: 10px; }
+        .user-list-item { padding: 18px 25px; cursor: pointer; border-bottom: 1px solid rgba(90, 0, 0, 0.3); transition: 0.3s; display: flex; align-items: center; font-size: 1.1rem; }
+        .user-list-item::before { content: '☠ '; color: #880000; margin-right: 15px; font-size: 1.3rem; }
+        .active { background: rgba(90, 0, 0, 0.5); border-left: 5px solid #ff1a1a; color: #fff; }
+        .active::before { color: #ff1a1a; }
+        a.logout { color: #ff1a1a; text-decoration: none; text-align: center; display: block; padding: 20px; background: rgba(20, 0, 0, 0.9); border-top: 2px solid #5a0000; font-weight: bold; font-size: 1.2rem; cursor: pointer; }
+
+        #main { width: 100%; height: 100%; display: none; flex-direction: column; background: rgba(0, 0, 0, 0.5); backdrop-filter: blur(3px); position: absolute; top: 0; left: 0; z-index: 10; }
+        .chat-header-container { display: flex; align-items: center; padding: 15px 20px; border-bottom: 2px solid #5a0000; background: rgba(10, 0, 0, 0.9); }
+        #back-btn { background: none; border: none; color: #ff1a1a; font-size: 1.8rem; cursor: pointer; margin-right: 15px; padding: 0; text-shadow: 0 0 10px red; display: block; }
+        #chat-title { color: #ff1a1a; margin: 0; text-shadow: 0 0 10px #ff0000; font-size: 1.5rem; font-family: 'Creepster', cursive; }
+        #chat-box { flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; padding: 20px 15px; }
+        .msg-wrapper { max-width: 80%; display: flex; flex-direction: column; position: relative; }
+        .msg-wrapper.admin { align-self: flex-end; }
+        .msg-wrapper.user { align-self: flex-start; }
+        .msg { padding: 12px 18px; border-radius: 8px; font-size: 1rem; box-shadow: 0 5px 15px rgba(0,0,0,0.8); }
+        .msg.admin { background: rgba(60, 0, 0, 0.85); color: #ffcccc; border: 1px solid #990000; }
+        .msg.user { background: rgba(15, 15, 15, 0.9); color: #ddd; border: 1px solid #444; border-left: 4px solid #ff1a1a; }
+        .msg-info { display: flex; justify-content: space-between; align-items: center; margin-top: 5px; font-size: 0.75rem; opacity: 0.7; }
+        .delete-btn { background: none; border: none; color: #ff4444; cursor: pointer; font-size: 1.2rem; font-weight: bold; margin-left: 10px; }
+        
+        form.chat-form { display: flex; gap: 10px; background: rgba(15, 0, 0, 0.9); padding: 15px; border-top: 1px solid #5a0000; }
+        form.chat-form input[type="text"] { flex-grow: 1; padding: 12px; background: rgba(0, 0, 0, 0.8); border: 1px solid #5a0000; color: #ff3333; font-family: inherit; font-size: 1rem; outline: none; border-radius: 5px; }
+        form.chat-form button { padding: 10px 20px; cursor: pointer; background: #5a0000; color: #fff; border: 1px solid #ff1a1a; font-family: inherit; font-size: 1rem; font-weight: bold; border-radius: 5px; }
+
+        @media (min-width: 768px) {
+            #sidebar { width: 320px; border-right: 2px solid #5a0000; position: relative; z-index: 1; }
+            #dashboard { display: none; } /* Tetap hidden sebelum login */
+            .dashboard-active { display: flex !important; }
+            #main { display: flex !important; position: relative; width: auto; flex-grow: 1; }
+            #back-btn { display: none; }
+            .msg-wrapper { max-width: 60%; }
+        }
+    </style>
+</head>
+<body>
+
+<video autoplay loop muted playsinline id="bg-video">
+    <source src="https://scraper-ig.vercel.app/quality_restoration_20260625073907301.mp4" type="video/mp4">
+</video>
+<div class="scanlines"></div>
+
+<div id="login-screen">
+    <div class="login-box">
+        <h2>RUANG KENDALI</h2>
+        <p id="login-error" style="color:red; text-shadow: 0 0 10px red; display:none;"></p>
+        <form onsubmit="handleLogin(event)">
+            <input type="password" id="admin-pwd" placeholder="Masukkan Kunci" required>
+            <button type="submit">BUKA PINTU</button>
+        </form>
+    </div>
+</div>
+
+<div id="dashboard">
+    <div id="sidebar">
+        <h3>Daftar Korban</h3>
+        <div id="user-list"></div>
+        <a onclick="logout()" class="logout">TUTUP KONEKSI</a>
+    </div>
+
+    <div id="main">
+        <div class="chat-header-container">
+            <button id="back-btn" onclick="kembaliKeList()">⬅</button>
+            <h2 id="chat-title">Pilih korban...</h2>
+        </div>
+        
+        <div id="chat-box"></div>
+        
+        <form id="chat-form" class="chat-form" style="display: none;">
+            <input type="text" id="msg-input" placeholder="Kirim teror..." required autocomplete="off">
+            <button type="submit">KIRIM</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    let activeUser = null;
+    let isMobile = window.innerWidth < 768;
+
+    // Pengecekan status login di Session Storage
+    if (sessionStorage.getItem('is_admin')) {
+        masukDashboard();
+    }
+
+    async function handleLogin(e) {
+        e.preventDefault();
+        const pwd = document.getElementById('admin-pwd').value;
+        const res = await fetch('/api/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ password: pwd })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+            sessionStorage.setItem('is_admin', 'true');
+            masukDashboard();
+        } else {
+            const err = document.getElementById('login-error');
+            err.innerText = data.message;
+            err.style.display = 'block';
+        }
+    }
+
+    function masukDashboard() {
+        document.getElementById('login-screen').style.display = 'none';
+        
+        if (!isMobile) {
+            document.getElementById('dashboard').className = 'dashboard-active';
+        } else {
+            document.getElementById('dashboard').style.display = 'block';
+        }
+        
+        loadUsers();
+        setInterval(() => {
+            loadUsers();
+            if(activeUser) loadMessages();
+        }, 2000);
+    }
+
+    function logout() {
+        sessionStorage.removeItem('is_admin');
+        location.reload();
+    }
+
+    // --- Sisa fungsinya sama seperti asli, cuman ganti fetch URL ke '/api/...' ---
+    
+    window.addEventListener('resize', () => {
+        isMobile = window.innerWidth < 768;
+        if (!sessionStorage.getItem('is_admin')) return;
+        
+        if (!isMobile) {
+            document.getElementById('sidebar').style.display = 'flex';
+            document.getElementById('main').style.display = 'flex';
+            document.getElementById('dashboard').className = 'dashboard-active';
+        } else {
+            document.getElementById('dashboard').className = '';
+            if (activeUser) {
+                document.getElementById('sidebar').style.display = 'none';
+                document.getElementById('main').style.display = 'flex';
+            } else {
+                document.getElementById('sidebar').style.display = 'flex';
+                document.getElementById('main').style.display = 'none';
+            }
+        }
+    });
+
+    async function loadUsers() {
+        const res = await fetch('/api/users');
+        const users = await res.json();
+        const userList = document.getElementById('user-list');
+        userList.innerHTML = '';
+        users.forEach(u => {
+            const div = document.createElement('div');
+            div.className = `user-list-item ${u === activeUser ? 'active' : ''}`;
+            div.innerText = u;
+            div.onclick = () => selectUser(u);
+            userList.appendChild(div);
+        });
+    }
+
+    function selectUser(user) {
+        activeUser = user;
+        document.getElementById('chat-title').innerText = `Target: ${user}`;
+        document.getElementById('chat-form').style.display = 'flex';
+        
+        if (isMobile) {
+            document.getElementById('sidebar').style.display = 'none';
+            document.getElementById('main').style.display = 'flex';
+        }
+        loadUsers(); 
+        loadMessages();
+    }
+
+    function kembaliKeList() {
+        activeUser = null; 
+        document.getElementById('chat-form').style.display = 'none';
+        document.getElementById('chat-box').innerHTML = ''; 
+        document.getElementById('chat-title').innerText = 'Pilih korban...';
+        document.getElementById('sidebar').style.display = 'flex';
+        document.getElementById('main').style.display = 'none';
+        loadUsers(); 
+    }
+
+    async function loadMessages() {
+        if (!activeUser) return;
+        const res = await fetch(`/api/messages?user=${activeUser}`);
+        const data = await res.json();
+        
+        const chatBox = document.getElementById('chat-box');
+        chatBox.innerHTML = '';
+        
+        data.forEach(m => {
+            const wrapper = document.createElement('div');
+            wrapper.className = `msg-wrapper ${m.sender === 'admin' ? 'admin' : 'user'}`;
+            let deleteHtml = m.id ? `<button type="button" class="delete-btn" onclick="hapusPesan('${m.id}')">✖</button>` : '';
+
+            wrapper.innerHTML = `
+                <div class="msg ${m.sender === 'admin' ? 'admin' : 'user'}">${m.text}</div>
+                <div class="msg-info"><span>${m.timestamp}</span>${deleteHtml}</div>
+            `;
+            chatBox.appendChild(wrapper);
+        });
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    async function hapusPesan(id) {
+        if(confirm("Lenyapkan jejak pesan ini?")) {
+            await fetch(`/api/delete?id=${id}`, { method: 'DELETE' });
+            loadMessages(); 
+        }
+    }
+
+    document.getElementById('chat-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const input = document.getElementById('msg-input');
+        const text = input.value;
+        if(!text) return;
+        
+        await fetch('/api/send', {
+            method: 'POST',
+            body: JSON.stringify({ sender: 'admin', receiver: activeUser, text: text }),
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        input.value = '';
+        setTimeout(() => { input.focus(); loadMessages(); }, 100);
+    });
+</script>
+</body>
+</html>
